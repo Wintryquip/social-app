@@ -1,0 +1,75 @@
+const mongoose = require("mongoose")
+const jwt = require("jsonwebtoken")
+const Joi = require("joi")
+const passwordComplexity = require("joi-password-complexity")
+
+const userSchema = new mongoose.Schema({
+    firstName: { type: String },
+    lastName: { type: String },
+    birthDate: { type: Date, required: true},
+    login: { type: String, required: true, unique: true},
+    email: { type: String, required: true, unique: true},
+    password: { type: String, required: true},
+    profilePic: { type: String },
+    bio: {type: String },
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+}, { timestamps: true})
+
+userSchema.methods.generateAuthToken = function () {
+    return jwt.sign({_id: this._id}, process.env.JWTPRIVATEKEY, {
+        expiresIn: "7d",
+    })
+}
+
+const User = mongoose.model("User", userSchema)
+
+const minAge = new Date()
+minAge.setFullYear(minAge.getFullYear() - 13)
+
+const validate = (data) => {
+    const schema = Joi.object({
+        firstName: Joi.string()
+            .optional()
+            .label("First name"),
+        lastName: Joi.string()
+            .optional()
+            .label("Last name"),
+        birthDate: Joi.date()
+            .required()
+            .min('1-1-1900')
+            .max(minAge)
+            .label("Birth date"),
+        login: Joi.string()
+            .required()
+            .label("Login"),
+        email: Joi.string()
+            .email()
+            .required()
+            .label("E-mail"),
+        password: passwordComplexity()
+            .required()
+            .label("Password"),
+        profilePic: Joi.string()
+            .optional()
+            .label("Profile picture URL"),
+        bio: Joi.string()
+            .optional()
+            .max(1000),
+        followers: Joi.array()
+            .items(Joi.string().hex().length(24))
+            .optional()
+            .label('Followers'),
+        following: Joi.array()
+            .items(Joi.string().hex().length(24))
+            .optional()
+            .label('Following'),
+        createdAt: Joi.date().optional().label('Created At'),
+        updatedAt: Joi.date().optional().label('Updated At'),
+    })
+    return schema.validate(data)
+}
+
+// TODO user follow function
+
+module.exports = { User, validate }
