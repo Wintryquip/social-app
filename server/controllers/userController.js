@@ -19,6 +19,7 @@ const signUpUser = async (req, res) => {
         res.status(201).send( { message: "User created successfully." })
         console.log(new Date(), "User", req.user, "registered in the database.")
     } catch (error) {
+        console.error(new Date(), "Error registering user:", error)
         res.status(500).send({ message: "Internal server error!" })
     }
 }
@@ -49,6 +50,7 @@ const signInUser = async (req, res) => {
         console.log(new Date(),'User', user.get("login"), 'logged in.')
 
     } catch (error) {
+        console.log(new Date(), "Error logging in user:", error)
         res.status(500).send({ message: "Internal Server Error!" })
     }
 }
@@ -105,5 +107,7 @@ const deleteUser = async (req, res) => {
         res.status(500).send({ message: "Internal server error", error: err.message });
     }
 }
+
+// TODO user follow function
 
 module.exports = { signUpUser, signInUser, auth, userProfile, editUser, deleteUser }

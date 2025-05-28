@@ -14,13 +14,10 @@ const Post = mongoose.model("Post", postSchema)
 const validate = (data) => {
     const schema = Joi.object({
         content: Joi.string()
-            .max(2000)
-            .allow(''),
-        images: Joi.array()
-            .items(Joi.string().uri())
-            .optional(),
+            .required()
+            .label("Content")
     });
     return schema.validate(data)
 }
 
-module.exports = {Post, validate}
+module.exports = { Post, validate }

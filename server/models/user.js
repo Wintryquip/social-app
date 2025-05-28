@@ -50,26 +50,11 @@ const validate = (data) => {
         password: passwordComplexity()
             .required()
             .label("Password"),
-        profilePic: Joi.string()
-            .optional()
-            .label("Profile picture URL"),
         bio: Joi.string()
             .optional()
             .max(1000),
-        followers: Joi.array()
-            .items(Joi.string().hex().length(24))
-            .optional()
-            .label('Followers'),
-        following: Joi.array()
-            .items(Joi.string().hex().length(24))
-            .optional()
-            .label('Following'),
-        createdAt: Joi.date().optional().label('Created At'),
-        updatedAt: Joi.date().optional().label('Updated At'),
     })
     return schema.validate(data)
 }
-
-// TODO user follow function
 
 module.exports = { User, validate }

@@ -17,6 +17,10 @@ const showPosts = async (req, res) => {
             .skip(skip)
             .limit(limit)
             .populate({
+                path: 'likes',
+                select: 'login'
+            })
+            .populate({
                 path: 'author',
                 select: 'login'
             })
@@ -41,10 +45,9 @@ const createPost = async (req, res) => {
     try {
         console.log(new Date(), "User", req.user, "tries to submit a post.")
 
-        const { error } = validate(req.body)
-        if (error) {
-            return res.status(400).send({ message: error.details[0].message })
-        }
+        const {error} = validate(req.body)
+        if(error)
+            return res.status(400).send({message: error.details[0].message})
 
         // Saving author id for post
         const authorId = new mongoose.Types.ObjectId(req.user._id)
@@ -73,8 +76,8 @@ const createPost = async (req, res) => {
                 }
 
                 // Size validation
-                if (image.size > process.env.MAXFILESIZE) {
-                    Post.findByIdAndDelete(postId)
+                if (image.size > Number(process.env.MAXFILESIZE)) {
+                    await Post.findByIdAndDelete(postId)
                     return res.status(400).send({ message: "Image size not allowed (max 2MB)." })
                 }
 
@@ -92,12 +95,12 @@ const createPost = async (req, res) => {
         }
 
         console.log(new Date(), "User", req.user, "submitted a post.")
-        res.status(200).send({ message: "Post created successfully", postId: newPost._id, images: newPost.images })
+        res.status(201).send({ message: "Post created successfully" })
     } catch (error) {
         console.error(new Date(), "Error creating post:", error)
         res.status(500).send({ message: "Internal server error!" })
     }
-};
+}
 
 /*
     Function that allows user to update his post.
@@ -105,7 +108,7 @@ const createPost = async (req, res) => {
     If user is updating images of the post function
     clears directory.
  */
-const updatePost = async (req, res) => {
+const updatePost = async (req, res) => { // TODO validation
     try {
         console.log(new Date(), "User", req.user, " tries to edit a post signed by id", req.body._id)
         const post = await Post.findById(req.body._id) // Find post
@@ -120,10 +123,13 @@ const updatePost = async (req, res) => {
             console.error(new Date(), "WARNING: Unauthorized edit attempt! User", req.user, "tried to modify post", req.body._id , "which does not belong to him.")
             return res.status(403).send({ message: "Post does not belongs to you!"})
         }
+        const content = req.body.content.toString()
+        if (content === "" || content.length > 2000) {
+            return
+        }
         const updatedPostData = req.body
         const updatedPost = await Post.findByIdAndUpdate(req.body._id,
-            { $set: updatedPostData},
-            { new: true, runValidators: true})
+            { $set: updatedPostData})
         const files = req.files ? req.files.images : null
         if (files) {
             const postId = req.body._id
@@ -140,6 +146,8 @@ const updatePost = async (req, res) => {
                     }
                 }
             }
+            // Clear image directory in database
+            updatedPost.images = []
             // Ensure creation of directory
             fs.mkdirSync(uploadPath, { recursive: true })
             for (const image of imagesArray) {
@@ -148,13 +156,15 @@ const updatePost = async (req, res) => {
                     return res.status(400).send({ message: "All files must be an images." })
                 }
                 // Size validation
-                if (image.size > process.env.MAXFILESIZE) {
-                    Post.findByIdAndDelete(postId)
+                if (image.size > Number(process.env.MAXFILESIZE)) {
+                    await Post.findByIdAndDelete(postId)
                     return res.status(400).send({ message: "Image size not allowed (max 2MB)." })
                 }
 
                 const imageName = Date.now() + "_" + image.name.replace(/\s+/g, "_")
                 const imagePath = path.join(uploadPath, imageName)
+
+                // Save file in server directory
                 await image.mv(imagePath)
 
                 // Save image directory in model
@@ -183,11 +193,30 @@ const likePost = async (req, res) => {
             console.error(new Date(), "Post does not exist.")
             return res.status(404).send({ message: "Post does not exist."})
         }
-
+        let isAlreadyLiked = false
+        const likes = post.likes
+        if (likes.length > 0) {
+            for (const like of likes) {
+                if (like.toString() === req.user._id.toString()) {
+                    isAlreadyLiked = true
+                    break
+                }
+            }
+        }
+        const userId = new mongoose.Types.ObjectId(req.user._id)
+        if (isAlreadyLiked) {
+            post.likes.pull(userId)
+            await post.save()
+            res.status(200).send({ message: "Post disliked."})
+        } else {
+            post.likes.push(userId)
+            await post.save()
+            res.status(200).send({ message: "Post liked."})
+        }
     } catch (error) {
         console.error(new Date(), "Error in liking process post:", error)
         res.status(500).send({ message: "Internal server error!"})
     }
 }
 
-module.exports = { createPost, showPosts, updatePost }
+module.exports = { createPost, showPosts, updatePost, likePost }
