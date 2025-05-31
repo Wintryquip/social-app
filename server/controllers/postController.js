@@ -1,5 +1,6 @@
 const mongoose = require("mongoose")
 const {validate, Post} = require("../models/post")
+const { sendNotification } = require('./notificationController')
 const fs = require("fs")
 const path = require("path")
 
@@ -71,7 +72,7 @@ const createPost = async (req, res) => {
             for (const image of imagesArray) {
                 // MIME validation
                 if (!/^image/.test(image.mimetype)) {
-                    Post.findByIdAndDelete(postId)
+                    await Post.findByIdAndDelete(postId)
                     return res.status(400).send({ message: "All files must be an images." })
                 }
 
@@ -188,8 +189,8 @@ const updatePost = async (req, res) => { // TODO validation
 const likePost = async (req, res) => {
     try {
         const post = await Post.findById(req.body._id) // Find post
-        // post does not exist
-        if(post === undefined) {
+        // Post does not exist
+        if(!post) {
             console.error(new Date(), "Post does not exist.")
             return res.status(404).send({ message: "Post does not exist."})
         }
@@ -211,6 +212,13 @@ const likePost = async (req, res) => {
         } else {
             post.likes.push(userId)
             await post.save()
+            req.notification = {
+                recipient: post.author,
+                type: 'like',
+                fromUser: new mongoose.Types.ObjectId(req.user._id),
+                post: post._id
+            }
+            await sendNotification(req, res)
             res.status(200).send({ message: "Post liked."})
         }
     } catch (error) {
@@ -219,4 +227,33 @@ const likePost = async (req, res) => {
     }
 }
 
-module.exports = { createPost, showPosts, updatePost, likePost }
+/*
+    Function that allows user to delete post.
+    It checks if the post exists and makes sure that
+    user is the author of the post.
+ */
+
+const deletePost = async (req, res) => {
+    try {
+        // store post
+        const post = await Post.findById(req.body._id)
+        // Post does not exist
+        if (!post) {
+            return res.status(404).send({ message: "Post not found."})
+        }
+        // Ensure user is author of the post
+        if (post.author.toString() !== req.user._id.toString()) {
+            console.error(new Date(), "WARNING: Unauthorized edit attempt! User", req.user, "tried to delete post", req.body._id , "which does not belong to him.")
+            return res.status(403).send({ message: "Post does not belongs to you!"})
+        }
+        // Delete post
+        await Post.findByIdAndDelete(req._id)
+        console.log(new Date(), "Post", req.body._id.toString(), "has been deleted")
+        return res.status(200).send({ message: "Post deleted."})
+    } catch (error) {
+        console.error(new Date(), "Error deleting post:", error)
+        res.status(500).send({ message: "Internal server error!"})
+    }
+}
+
+module.exports = { createPost, showPosts, updatePost, likePost, deletePost }
