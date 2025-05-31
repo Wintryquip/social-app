@@ -21,6 +21,8 @@ const userRoutes = require("./routes/userRoutes")
 app.use("/user", userRoutes)
 const postRoutes = require("./routes/postRoutes")
 app.use("/post", postRoutes)
+const commentRoutes = require("./routes/commentRoutes")
+app.use("/comment", commentRoutes)
 
 // MongoDB connection
 connectDB()

@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt")
 const Joi = require("joi")
 const fs = require("fs")
 const path = require("path")
-const {sendNotification} = require("./notificationController");
+const { sendNotification } = require("./notificationController");
 
 /*
     Function saving user data in the database.

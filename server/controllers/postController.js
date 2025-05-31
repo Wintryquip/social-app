@@ -1,9 +1,11 @@
 const mongoose = require("mongoose")
 const {validate, Post} = require("../models/post")
+const { Comment } = require("../models/comment")
 const { sendNotification } = require('./notificationController')
 const fs = require("fs")
 const path = require("path")
 
+// TODO delete certain images from post
 /*
     Function that returns all posts from the database.
  */
@@ -14,7 +16,7 @@ const showPosts = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10
         const skip = (page - 1) * limit
         const posts = await Post.find()
-            .sort({updatedAt: -1})
+            .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
             .populate({
@@ -25,11 +27,18 @@ const showPosts = async (req, res) => {
                 path: 'author',
                 select: 'login'
             })
-        if (req.user === undefined) { // not signed-in user
-            console.log(new Date(), "Anonymous user fetched posts.")
-        } else { // signed-in user
-            console.log(new Date(), "User", req.user, "fetched posts.")
-        }
+            .populate({
+                path: 'comments',
+                select: 'text author likes',
+                populate: {
+                    path: 'author',
+                    select: 'login profilePic'
+                },
+                populate: {
+                    path: 'likes',
+                    select: 'login'
+                }
+            })
         res.status(200).send(posts)
     } catch (error) {
         console.log(new Date(), "Error fetching posts:", error)
@@ -109,26 +118,29 @@ const createPost = async (req, res) => {
     If user is updating images of the post function
     clears directory.
  */
-const updatePost = async (req, res) => { // TODO validation
+const updatePost = async (req, res) => {
     try {
-        console.log(new Date(), "User", req.user, " tries to edit a post signed by id", req.body._id)
+        console.log(new Date(), "User", req.user, "tries to edit a post signed by id", req.body._id)
         const post = await Post.findById(req.body._id) // Find post
         // post does not exist
         if(post === undefined) {
             console.error(new Date(), "Post does not exist.")
             return res.status(404).send({ message: "Post does not exist."})
         }
-        // If user id does not match
+        // Unauthorized attempt
         const userId = new mongoose.Types.ObjectId(req.user._id)
         if(post.author.toString() !== userId.toString()) {
             console.error(new Date(), "WARNING: Unauthorized edit attempt! User", req.user, "tried to modify post", req.body._id , "which does not belong to him.")
             return res.status(403).send({ message: "Post does not belongs to you!"})
         }
-        const content = req.body.content.toString()
-        if (content === "" || content.length > 2000) {
-            return
-        }
-        const updatedPostData = req.body
+
+        // validation without _id
+        const { _id, ...bodyWithoutId } = req.body;
+        const { error } = validate(bodyWithoutId);
+        if (error)
+            return res.status(400).send({ message: error.details[0].message });
+
+        const updatedPostData = { _id, ...bodyWithoutId };
         const updatedPost = await Post.findByIdAndUpdate(req.body._id,
             { $set: updatedPostData})
         const files = req.files ? req.files.images : null
@@ -232,7 +244,6 @@ const likePost = async (req, res) => {
     It checks if the post exists and makes sure that
     user is the author of the post.
  */
-
 const deletePost = async (req, res) => {
     try {
         // store post
@@ -247,8 +258,10 @@ const deletePost = async (req, res) => {
             return res.status(403).send({ message: "Post does not belongs to you!"})
         }
         // Delete post
-        await Post.findByIdAndDelete(req._id)
-        console.log(new Date(), "Post", req.body._id.toString(), "has been deleted")
+        await Post.findByIdAndDelete(req.body._id)
+        // Delete all comments associated with the post
+        await Comment.deleteMany({post: req.body._id})
+        console.log(new Date(), "Post", req.body._id.toString(), "has been deleted.")
         return res.status(200).send({ message: "Post deleted."})
     } catch (error) {
         console.error(new Date(), "Error deleting post:", error)
