@@ -23,6 +23,8 @@ const postRoutes = require("./routes/postRoutes")
 app.use("/post", postRoutes)
 const commentRoutes = require("./routes/commentRoutes")
 app.use("/comment", commentRoutes)
+const notificationRoutes = require("./routes/notificationRoutes")
+app.use("/notification", notificationRoutes)
 
 // MongoDB connection
 connectDB()

@@ -1,5 +1,6 @@
 const { Notification } = require('../models/notification')
-// TODO show set and delete notification
+const mongoose = require('mongoose')
+
 /*
     Function sending notification to user.
     It prevents from spam or sending notification to oneself.
@@ -35,9 +36,13 @@ const sendNotification = async (req, res) => {
             await notification.save()
             delete req.notification
             console.log(new Date(), "Notification sent:", notification)
+            return res.status(200).send({ message: "Notification sent successfully." })
+        } else {
+            return res.status(400).send({ message: "Cannot send notification to yourself." });
         }
     } catch (error) {
         console.log(new Date(), "Failed attempt sending notification: ", error);
+        res.status(500).send({ message: "Internal server error!" });
     }
 }
 
@@ -45,14 +50,42 @@ const sendNotification = async (req, res) => {
     Function allowing user to see his notifications.
  */
 const showNotifications = async (req, res) => {
-
+    try {
+        await deleteNotification(req, res)
+        const notifications = await Notification.find({recipient: req.user._id})
+        res.status(200).send({notifications})
+    } catch (error) {
+        console.log(new Date(), "Error fetching notifications: ", error);
+        res.status(500).send({ message: "Internal server error!"})
+    }
 }
 
 /*
     Function setting field `read` to true if user saw notification.
  */
 const setReadNotifications = async (req, res) => {
+    try {
+        const { _id } = req.body;
+        if (!_id || !mongoose.Types.ObjectId.isValid(_id)) {
+            return res.status(400).send({ message: "Invalid or missing notification ID." });
+        }
 
+        const notification = await Notification.findById(_id)
+        if(!notification) {
+            console.error(new Date(), "Notification not found.")
+            return res.status(404).send({ message: "Notification not found." })
+        }
+        if (notification.recipient.toString() !== req.user._id.toString()) {
+            console.error(new Date(), "WARNING: Unauthorized edit attempt! User", req.user, "tried to modify notification", _id , "which does not belong to him.")
+            return res.status(403).send({ message: "Notification does not belongs to you!"})
+        }
+        await Notification.findByIdAndUpdate(_id,
+            { $set: { read: true } })
+        return res.status(200).send({ message: "Notification read." })
+    } catch (error) {
+        console.log(new Date(), "Failed attempt setting read notifications: ", error);
+        res.status(500).send({ message: "Internal server error!"})
+    }
 }
 
 /*
@@ -60,10 +93,11 @@ const setReadNotifications = async (req, res) => {
  */
 const deleteNotification = async (req, res) => {
     try {
-
+        await Notification.deleteMany({ recipient: req.user._id, read: true });
+        return res.status(200).send({ message: "Read notifications deleted successfully." })
     } catch (error) {
-        console.log(new Date(), "Failed attempt deleting notification: ", error);
+        console.log(new Date(), "Failed attempt deleting notifications: ", error);
     }
 }
 
-module.exports = { sendNotification, showNotifications, setReadNotifications, deleteNotification }
+module.exports = { sendNotification, showNotifications, setReadNotifications }

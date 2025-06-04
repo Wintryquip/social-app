@@ -134,7 +134,7 @@ const updatePost = async (req, res) => {
             return res.status(403).send({ message: "Post does not belongs to you!"})
         }
 
-        // validation without _id
+        // validation without _id - validator requirement
         const { _id, ...bodyWithoutId } = req.body;
         const { error } = validate(bodyWithoutId);
         if (error)

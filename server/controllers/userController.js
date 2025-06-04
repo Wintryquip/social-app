@@ -269,6 +269,7 @@ const followUser = async (req, res) => {
 /*
     Function that allows user to delete his account.
  */
+// TODO delete everything associated with user (notifications, post, comments, clear profile picture directory on server).
 const deleteUser = async (req, res) => {
     try {
         const deletedUser = await User.findByIdAndDelete(req.user._id);
