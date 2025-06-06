@@ -6,10 +6,8 @@ import EditPost from "./EditPost"
 import {
     Heart,
     HeartFill,
-    Chat,
     Trash,
     Pencil,
-    PersonCircle,
     Clock,
     Send
 } from 'react-bootstrap-icons';
