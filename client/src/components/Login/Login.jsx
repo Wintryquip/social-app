@@ -1,9 +1,11 @@
-import {useContext, useEffect, useState} from "react"
+import {useContext, useState} from "react"
 import axios from "axios"
 import { Link } from "react-router-dom"
 import { UserContext } from "../../contexts/UserContext"
 
 const Login = () => {
+    const baseUrl = process.env.REACT_APP_API_URL;
+    const port = process.env.REACT_APP_API_PORT;
     const [data, setData] = useState({
         login: "",
         password: ""
@@ -23,7 +25,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const url = "http://localhost:8080/user/login"
+            const url = `${baseUrl}:${port}/user/login`
             const {data: res} = await axios.post(url, data)
             login(res.data)
             // Full window reload to acknowledge token
@@ -81,7 +83,7 @@ const Login = () => {
                                     />
                                 </div>
 
-                                {/* Pole hasła z przyciskiem ujawniania */}
+                                {/* Show password button */}
                                 <div className="mb-3 position-relative">
                                     <input
                                         type={showPassword ? "text" : "password"}

@@ -2,6 +2,8 @@ import React, { useState } from "react"
 import axios from "axios"
 
 const EditComment = ({ comment, user, token, fetchPosts, onFinishEdit }) => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const [text, setText] = useState(comment.text)
     const [error, setError] = useState(null)
     const [loading, setLoading] = useState(false)
@@ -11,7 +13,7 @@ const EditComment = ({ comment, user, token, fetchPosts, onFinishEdit }) => {
         setLoading(true)
         try {
             await axios.patch(
-                "http://localhost:8080/comment/edit",
+                `${baseUrl}:${port}/comment/edit`,
                 {
                     _id: comment._id,
                     text,

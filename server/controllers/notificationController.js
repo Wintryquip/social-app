@@ -47,8 +47,12 @@ const sendNotification = async (req, res) => {
  */
 const showNotifications = async (req, res) => {
     try {
-        await deleteNotification(req, res)
+        deleteNotification(req, res) // delete old notifications
         const notifications = await Notification.find({recipient: req.user._id})
+            .populate({
+                path: 'fromUser',
+                select: 'login'
+            })
         res.status(200).send({notifications})
     } catch (error) {
         console.log(new Date(), "Error fetching notifications: ", error);
@@ -90,7 +94,7 @@ const setReadNotifications = async (req, res) => {
 const deleteNotification = async (req, res) => {
     try {
         await Notification.deleteMany({ recipient: req.user._id, read: true });
-        return res.status(200).send({ message: "Read notifications deleted successfully." })
+        console.log(new Date(), "Read notifications deleted successfully.");
     } catch (error) {
         console.log(new Date(), "Failed attempt deleting notifications: ", error);
     }

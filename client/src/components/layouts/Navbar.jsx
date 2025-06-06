@@ -1,9 +1,13 @@
-import React, { useContext } from "react";
+import React, {useContext, useEffect, useState} from "react";
 import { Link } from "react-router-dom";
 import { UserContext } from "../../contexts/UserContext";
 
 const Navbar = () => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const { user, logout } = useContext(UserContext);
+    const [notifications, setNotifications] = useState(null)
+    const [error, setError] = useState(null)
 
     const handleLogout = () => {
         logout();
@@ -11,6 +15,53 @@ const Navbar = () => {
         localStorage.removeItem("profilePic");
         window.location.reload();
     };
+
+    const fetchNotifications = () => {
+        const token = localStorage.getItem("token")
+
+        fetch(`${baseUrl}:${port}/notification/show`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("No network response.")
+                }
+                return response.json()
+            })
+            .then(data => setNotifications(data.notifications))
+            .catch(err => setError(err))
+    };
+
+    useEffect(() => {
+        fetchNotifications()
+    }, [])
+
+    const markNotificationAsRead = (id) => {
+        const token = localStorage.getItem("token")
+        fetch(`${baseUrl}:${port}/notification/read`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ _id: id })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to mark notification as read.")
+                }
+            })
+            .then(() => {
+                fetchNotifications()
+            })
+            .catch(error => {
+                console.error("Error updating notification:", error)
+            })
+    }
 
     const loginName = localStorage.getItem("login");
     const profilePic = localStorage.getItem("profilePic");
@@ -49,16 +100,72 @@ const Navbar = () => {
                         {/* Notifications Dropdown */}
                         <li className="nav-item dropdown mx-2">
                             <button className="btn btn-light position-relative rounded-circle" data-bs-toggle="dropdown" style={{ width: "2.5rem", height: "2.5rem" }}>
-                                🔔
-                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    3
-                                </span>
+                                {error && (
+                                    <li className="dropdown-item text-danger small">
+                                        Error: {error.message || "Something went wrong."}
+                                    </li>
+                                )}
+
+                                {Array.isArray(notifications) && notifications.length > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {notifications.length}
+                                    </span>
+                                )}
                             </button>
                             <ul className="dropdown-menu dropdown-menu-end">
-                                <li className="dropdown-item text-muted small">Anna liked your post</li>
-                                <li className="dropdown-item text-muted small">John commented: "Nice!"</li>
-                                <li className="dropdown-item text-muted small">New follower: Mike</li>
+                                {Array.isArray(notifications) && notifications.length === 0 && (
+                                    <li className="dropdown-item text-muted small">No notifications.</li>
+                                )}
+                                {Array.isArray(notifications) && notifications.map((notification) => {
+                                    const notificationType = notification.type;
+                                    const from = notification.fromUser?.login || "Someone";
+
+                                    switch (notificationType) {
+                                        case "comment":
+                                            return (
+                                                <li key={notification._id} className="dropdown-item text-muted small" onMouseEnter={() => {
+                                                    if (!notification.read) markNotificationAsRead(notification._id)
+                                                    fetchNotifications()
+                                                }}>
+                                                    {from} commented your post.
+                                                </li>
+                                            );
+                                        case "like":
+                                            return (
+                                                <li key={notification._id} className="dropdown-item text-muted small" onMouseEnter={() => {
+                                                    if (!notification.read) markNotificationAsRead(notification._id)
+                                                }}>
+                                                    {from} liked your post.
+                                                </li>
+                                            );
+                                        case "commentLike":
+                                            return (
+                                                <li key={notification._id} className="dropdown-item text-muted small" onMouseEnter={() => {
+                                                    if (!notification.read) markNotificationAsRead(notification._id)
+                                                }}>
+                                                    {from} liked your comment.
+                                                </li>
+                                            );
+                                        case "follow":
+                                            return (
+                                                <li key={notification._id} className="dropdown-item text-muted small" onMouseEnter={() => {
+                                                    if (!notification.read) markNotificationAsRead(notification._id)
+                                                }}>
+                                                    {from} is now following you.
+                                                </li>
+                                            );
+                                        default:
+                                            return (
+                                                <li key={notification._id || Math.random()} className="dropdown-item text-muted small" onMouseEnter={() => {
+                                                    if (!notification.read) markNotificationAsRead(notification._id)
+                                                }}>
+                                                    Unknown notification
+                                                </li>
+                                            );
+                                    }
+                                })}
                             </ul>
+
                         </li>
 
                         {/* User Dropdown */}
@@ -68,7 +175,7 @@ const Navbar = () => {
                                     src={
                                         profilePic
                                             ? (profilePic.startsWith("http") ? profilePic : `http://localhost:8080${profilePic}`)
-                                            : "http://localhost:8080/uploads/images/profile/default/default.png"
+                                            : `${baseUrl}:${port}/uploads/images/profile/default/default.png`
                                     }
                                     alt="profile"
                                     className="rounded-circle me-2"

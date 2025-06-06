@@ -2,6 +2,8 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 
 const EditPost = ({ post, fetchPosts }) => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const [content, setContent] = useState(post.content || "")
     const [images, setImages] = useState([])
     const [error, setError] = useState("")
@@ -24,7 +26,7 @@ const EditPost = ({ post, fetchPosts }) => {
             formData.append("content", content)
             images.forEach((image) => formData.append("images", image))
 
-            await axios.patch("http://localhost:8080/post/update", formData, {
+            await axios.patch(`${baseUrl}:${port}/post/update`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -69,6 +71,7 @@ const EditPost = ({ post, fetchPosts }) => {
 
                 <div style={{ marginBottom: "10px" }}>
                     <input
+                        className="form-control"
                         type="file"
                         name="images"
                         multiple

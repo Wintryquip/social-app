@@ -2,6 +2,8 @@ import { useState } from "react"
 import axios from "axios"
 import { Link, useNavigate } from "react-router-dom";
 const Signup = () => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const [data, setData] = useState({
         login: "",
         email: "",
@@ -24,7 +26,7 @@ const Signup = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const url = "http://localhost:8080/user/register"
+            const url = `${baseUrl}:${port}/user/register`
             const { data: res } = await axios.post(url, data)
             navigate("/login")
         } catch (error) {
@@ -94,7 +96,7 @@ const Signup = () => {
                                     />
                                 </div>
 
-                                {/* Pole hasła z przyciskiem ujawniania */}
+                                {/* Show password button */}
                                 <div className="mb-3 position-relative">
                                     <input
                                         type={showPassword ? "text" : "password"}

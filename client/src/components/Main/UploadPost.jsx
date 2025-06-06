@@ -2,6 +2,8 @@ import { useState } from "react"
 import axios from "axios"
 
 const UploadPost = ({ fetchPosts }) => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const [content, setContent] = useState("")
     const [images, setImages] = useState([])
     const [error, setError] = useState("")
@@ -18,7 +20,7 @@ const UploadPost = ({ fetchPosts }) => {
             formData.append("content", content)
             images.forEach((image) => formData.append("images", image))
 
-            const url = "http://localhost:8080/post/create"
+            const url = `${baseUrl}:${port}/post/create`
 
             await axios.post(url, formData, {
                 headers: {
@@ -108,6 +110,7 @@ const UploadPost = ({ fetchPosts }) => {
                 />
 
                 <input
+                    className="form-control"
                     type="file"
                     name="images"
                     multiple
@@ -135,8 +138,6 @@ const UploadPost = ({ fetchPosts }) => {
                         fontWeight: "600",
                         transition: "background-color 0.3s ease",
                     }}
-                    onMouseEnter={(e) => (e.target.style.backgroundColor = "#1a5fcc")}
-                    onMouseLeave={(e) => (e.target.style.backgroundColor = "#2a7ae2")}
                 >
                     Upload post
                 </button>

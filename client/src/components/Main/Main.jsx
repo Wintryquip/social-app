@@ -5,8 +5,11 @@ import axios from "axios"
 import Post from "./Post"
 import EditPost from "./EditPost"
 import { Spinner } from "react-bootstrap"
+import ServerError from "../pages/ServerError";
 
 const Main = () => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const [posts, setPosts] = useState(null)
     const [error, setError] = useState(null)
     const [postToEdit, setPostToEdit] = useState(null)
@@ -14,7 +17,7 @@ const Main = () => {
     const token = localStorage.getItem("token")
 
     const fetchPosts = () => {
-        fetch("http://localhost:8080/post/show")
+        fetch(`${baseUrl}:${port}/post/show`)
             .then((res) => {
                 if (!res.ok) throw new Error("Network error.")
                 return res.json()
@@ -30,7 +33,7 @@ const Main = () => {
     const handlePostLike = async (postId) => {
         try {
             await axios.post(
-                "http://localhost:8080/post/like",
+                `${baseUrl}:${port}/post/like`,
                 { _id: postId },
                 {
                     headers: {
@@ -59,11 +62,7 @@ const Main = () => {
         fetchPosts()
     }
 
-    if (error) return (
-        <div className="alert alert-danger text-center rounded-pill mt-4">
-            Error: {error}
-        </div>
-    )
+    if (error) return <ServerError error={error} />
 
     if (!posts) return (
         <div className="text-center mt-5">

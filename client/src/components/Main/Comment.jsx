@@ -3,13 +3,15 @@ import axios from "axios"
 import { Heart, HeartFill } from 'react-bootstrap-icons'
 
 const Comment = ({ comment, user, token, fetchPosts, onEditClick, onDeleteClick }) => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const [error, setError] = useState(null)
 
     const handleCommentLike = async (e) => {
         e.preventDefault()
         try {
             await axios.post(
-                "http://localhost:8080/comment/like",
+                `${baseUrl}:${port}/comment/like`,
                 { _id: comment._id },
                 {
                     headers: {
@@ -44,8 +46,8 @@ const Comment = ({ comment, user, token, fetchPosts, onEditClick, onDeleteClick 
                 <img
                     src={
                         comment.author.profilePic
-                            ? "http://localhost:8080" + comment.author.profilePic
-                            : "http://localhost:8080/uploads/images/profile/default/default.png"
+                            ? `${baseUrl}:${port}` + comment.author.profilePic
+                            : `${baseUrl}:${port}/uploads/images/profile/default/default.png`
                     }
                     alt="Profile"
                     style={{ width: "40px", height: "40px", borderRadius: "50%", marginRight: "10px" }}
@@ -57,7 +59,7 @@ const Comment = ({ comment, user, token, fetchPosts, onEditClick, onDeleteClick 
                 {comment.text}
             </div>
 
-            {/* Sekcja lajków */}
+            {/* Likes */}
             <div className="d-flex justify-content-between align-items-center mb-2" style={{ fontSize: '13px', color: '#666' }}>
                 <div>
                     {Array.isArray(comment.likes) && comment.likes.length > 0

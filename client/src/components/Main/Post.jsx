@@ -11,8 +11,11 @@ import {
     Clock,
     Send
 } from 'react-bootstrap-icons';
+import ServerError from "../pages/ServerError";
 
 const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
     const [comments, setComments] = useState({})
     const [error, setError] = useState(null)
     const [editingCommentId, setEditingCommentId] = useState(null)
@@ -26,7 +29,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
     const handleCommentSubmit = async (e, postId) => {
         e.preventDefault()
         try {
-            await axios.post("http://localhost:8080/comment/create", {
+            await axios.post(`${baseUrl}:${port}/comment/create`, {
                 _id: postId,
                 text: comments[postId],
                 author: user._id,
@@ -46,7 +49,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
 
     const handleCommentDelete = async (commentId) => {
         try {
-            await axios.delete("http://localhost:8080/comment/delete", {
+            await axios.delete(`${baseUrl}:${port}/comment/delete`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -68,7 +71,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
     const handlePostDelete = async (e, postId) => {
         e.preventDefault()
         try {
-            await axios.delete("http://localhost:8080/post/delete", {
+            await axios.delete(`${baseUrl}:${port}/post/delete`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -90,8 +93,8 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                     <img
                         src={
                             post.author.profilePic
-                                ? "http://localhost:8080" + post.author.profilePic
-                                : "http://localhost:8080/uploads/images/profile/default/default.png"
+                                ? baseUrl + ":" + port + post.author.profilePic
+                                : `${baseUrl}:${port}/uploads/images/profile/default/default.png`
                         }
                         alt="Author profile"
                         className="rounded-circle me-2"
@@ -140,10 +143,10 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
 
                         {post.images.length > 0 && (
                             <div className="mb-3">
-                                {/* Główne zdjęcie */}
+                                {/* Main photo */}
                                 <div className="mb-2 text-center">
                                     <img
-                                        src={"http://localhost:8080" + post.images[0]}
+                                        src={baseUrl + ":" + port + post.images[0]}
                                         alt="Main"
                                         className="img-fluid rounded shadow"
                                         style={{ maxHeight: "400px", objectFit: "cover", cursor: "pointer" }}
@@ -151,12 +154,12 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                                     />
                                 </div>
 
-                                {/* Miniaturki */}
+                                {/* Thumbnails */}
                                 <div className="d-flex flex-wrap justify-content-center gap-2">
                                     {post.images.slice(1).map((image, idx) => (
                                         <img
                                             key={idx + 1}
-                                            src={"http://localhost:8080" + image}
+                                            src={baseUrl + ":" + port + image}
                                             alt={`Thumbnail ${idx + 1}`}
                                             className="rounded border"
                                             style={{
@@ -198,7 +201,6 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                 {/* Comments Section */}
                 <div className="mb-3">
                     {post.comments.map((comment) => {
-                        const isAuthor = comment.author.login === user?.login;
                         const isEditing = editingCommentId === comment._id;
 
                         return (
@@ -254,11 +256,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                     </div>
                 )}
 
-                {error && (
-                    <div className="alert alert-danger mt-3">
-                        {error}
-                    </div>
-                )}
+                {error && <ServerError error={error} />}
             </div>
 
             {/* Image Modal */}
@@ -275,7 +273,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                             </div>
                             <div className="modal-body text-center">
                                 <img
-                                    src={"http://localhost:8080" + post.images[expandedImageIndex]}
+                                    src={baseUrl + ":" + port + post.images[expandedImageIndex]}
                                     alt="Expanded content"
                                     className="img-fluid"
                                     style={{ maxHeight: '80vh' }}

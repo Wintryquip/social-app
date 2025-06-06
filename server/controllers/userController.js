@@ -6,6 +6,9 @@ const Joi = require("joi")
 const fs = require("fs")
 const path = require("path")
 const { sendNotification } = require("./notificationController");
+const {Post} = require("../models/post");
+const {Comment} = require("../models/comment");
+const {mongo} = require("mongoose");
 
 /*
     Function saving user data in the database.
@@ -106,9 +109,17 @@ const auth = (req, res, next) => {
 }
 
 /*
+    Function allowing user to find desired user by
+    his login.
+ */
+const searchUsers = async (req, res) => {
+    const login = req.params.login.toString()
+
+}
+
+/*
     Function that shows user data.
  */
-// TODO show user posts
 const userProfile = async (req, res) => {
     try {
         const userData = await User.findOne({_id: new mongoose.Types.ObjectId(req.body._id)})
@@ -119,7 +130,34 @@ const userProfile = async (req, res) => {
             ])
         if(!userData)
             return res.status(401).send({ message: "User not found" })
-        res.send(userData)
+
+        const userPosts = await Post.find({ author: new mongoose.Types.ObjectId(req.body._id)})
+            .sort({updatedAt: -1})
+            .populate({
+                path: 'likes',
+                select: 'login'
+            })
+            .populate({
+                path: 'author',
+                select: 'login profilePic'
+            })
+            .populate({
+                path: 'comments',
+                select: 'text author likes',
+                populate: [
+                    {
+                        path: 'author',
+                        select: 'login profilePic'
+                    },
+                    {
+                        path: 'likes',
+                        select: 'login'
+                    }]
+            })
+        res.send({
+            user: userData,
+            posts: userPosts
+        });
     } catch (err) {
         res.status(500).send({ message: "Internal server error!" })
     }
@@ -128,6 +166,7 @@ const userProfile = async (req, res) => {
 /*
     Function allowing user to edit his data.
  */
+// TODO unique login validation
 const editUser = async (req, res) => {
     const validate = (data) => {
         const schema = Joi.object({
@@ -307,20 +346,29 @@ const followUser = async (req, res) => {
 /*
     Function that allows user to delete his account.
  */
-// TODO delete everything associated with user (notifications, post, comments, clear profile picture directory on server).
 const deleteUser = async (req, res) => {
     try {
-        const deletedUser = await User.findByIdAndDelete(req.user._id);
+        const userId = new mongoose.Types.ObjectId(req.user._id);
+        const deletedUser = await User.findByIdAndDelete(userId);
 
         if (!deletedUser) {
             return res.status(404).send({ message: "User not found." });
         }
 
-        console.log(new Date(), "User Deleted.")
+        await Promise.all([
+            Post.deleteMany({ author: userId }),
+            Comment.deleteMany({ author: userId }),
+            Notification.deleteMany({ recipient: userId }),
+            Notification.deleteMany({ fromUser: userId }),
+        ]);
+
+        console.log(new Date(), "User and all associated data deleted.");
         res.status(200).send({ message: "User deleted successfully", data: deletedUser });
     } catch (err) {
+        console.error("Error deleting user:", err);
         res.status(500).send({ message: "Internal server error", error: err.message });
     }
 }
+
 
 module.exports = { signUpUser, signInUser, logoutUser, auth, userProfile, editUser, deleteUserProfilePic, followUser, deleteUser }

@@ -5,7 +5,6 @@ const { sendNotification } = require('./notificationController')
 const fs = require("fs")
 const path = require("path")
 
-// TODO delete certain images from post
 /*
     Function that returns all posts from the database.
  */
