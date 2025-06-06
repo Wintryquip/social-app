@@ -16,16 +16,23 @@ const signUpUser = async (req, res) => {
         const {error} = validate(req.body)
         if(error)
             return res.status(400).send({message: error.details[0].message})
-        const user = await User.findOne({ login: req.body.login })
+        const normalizedLogin = req.body.login.trim().toLowerCase();
+        const user = await User.findOne({ login: normalizedLogin })
         if(user)
             return res
                 .status(409)
-                .send({ message: "User with given email address already exists!"})
+                .send({ message: "User with given login address already exists!"})
+        const normalizedEmail = req.body.email.trim().toLowerCase();
+        const checkEmailUser = await User.findOne({ email: normalizedEmail })
+        if(checkEmailUser)
+            return res
+                .status(409)
+                .send({message: "User with given email already exists!"})
         const salt = await bcrypt.genSalt(Number(process.env.SALT))
         const hashPassword = await bcrypt.hash(req.body.password, salt)
-        await new User({ ...req.body, password: hashPassword }).save()
+        await new User({ ...req.body, login: normalizedLogin, email: normalizedEmail, password: hashPassword }).save()
         res.status(201).send( { message: "User created successfully." })
-        console.log(new Date(), "User", req.user, "registered in the database.")
+        console.log(new Date(), "User", normalizedLogin, "registered in the database.")
     } catch (error) {
         console.error(new Date(), "Error registering user:", error)
         res.status(500).send({ message: "Internal server error!" })
@@ -47,7 +54,9 @@ const signInUser = async (req, res) => {
         const { error } = validate(req.body);
         if (error)
             return res.status(400).send({ message: error.details[0].message })
-        const user = await User.findOne({ login: req.body.login })
+
+        const normalizedLogin = req.body.login.toLowerCase();
+        const user = await User.findOne({ login: normalizedLogin })
         if (!user)
             return res.status(401).send({ message: "Invalid Login or Password!" })
         const validPassword = await bcrypt.compare(
@@ -57,11 +66,26 @@ const signInUser = async (req, res) => {
         if (!validPassword)
             return res.status(401).send({ message: "Invalid Login or Password!" })
         const token = user.generateAuthToken();
-        res.status(200).send({ data: token, message: "logged in successfully." })
+        res.status(200).send({
+            data: {
+                token,
+                login: user.login,
+                profilePic: user.profilePic
+            }, message: "logged in successfully." })
         console.log(new Date(),'User', user.get("login"), 'logged in.')
 
     } catch (error) {
         console.log(new Date(), "Error logging in user:", error)
+        res.status(500).send({ message: "Internal Server Error!" })
+    }
+}
+
+const logoutUser = async (req, res) => {
+    try {
+        res.status(200).send({ message: "Logged out successfully."})
+        console.log(new Date(), "User", req.user, "logged out.")
+    } catch (error) {
+        console.log(new Date(), "Error logging out user:", error)
         res.status(500).send({ message: "Internal Server Error!" })
     }
 }
@@ -84,7 +108,7 @@ const auth = (req, res, next) => {
 /*
     Function that shows user data.
  */
-
+// TODO show user posts
 const userProfile = async (req, res) => {
     try {
         const userData = await User.findOne({_id: new mongoose.Types.ObjectId(req.body._id)})
@@ -135,6 +159,16 @@ const editUser = async (req, res) => {
             return res.status(404).send({ message: "User not found" })
         }
         let updatedUserData = { ...user.toObject(), ...req.body }
+
+        // Normalize login and email if present
+        if (updatedUserData.login) {
+            updatedUserData.login = updatedUserData.login.trim().toLowerCase()
+        }
+
+        if (updatedUserData.email) {
+            updatedUserData.email = updatedUserData.email.trim().toLowerCase()
+        }
+
         const file = req.files ? req.files.image : null
         if (file) {
             const uploadPath = path.join(__dirname, "..", "uploads", "images", "profile", "", req.user._id.toString())
@@ -160,9 +194,13 @@ const editUser = async (req, res) => {
                     }
                 }
             }
-
+            // save image file to the server
             await file.mv(imagePath)
-            updatedUserData.profilePic = imagePath
+            // get relative path to the image from the public 'uploads' directory
+            const publicPath = path.join(__dirname, "..", "uploads");
+            const relativeImagePath = path.relative(publicPath, imagePath).split(path.sep).join("/");
+            // store relative URL in the database
+            updatedUserData.profilePic = `/uploads/${relativeImagePath}`;
         }
         delete updatedUserData._id
         delete updatedUserData.birthDate
@@ -285,4 +323,4 @@ const deleteUser = async (req, res) => {
     }
 }
 
-module.exports = { signUpUser, signInUser, auth, userProfile, editUser, deleteUserProfilePic, followUser, deleteUser }
+module.exports = { signUpUser, signInUser, logoutUser, auth, userProfile, editUser, deleteUserProfilePic, followUser, deleteUser }

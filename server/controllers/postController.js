@@ -25,19 +25,20 @@ const showPosts = async (req, res) => {
             })
             .populate({
                 path: 'author',
-                select: 'login'
+                select: 'login profilePic'
             })
             .populate({
                 path: 'comments',
                 select: 'text author likes',
-                populate: {
+                populate: [
+                    {
                     path: 'author',
                     select: 'login profilePic'
-                },
-                populate: {
+                    },
+                {
                     path: 'likes',
                     select: 'login'
-                }
+                }]
             })
         res.status(200).send(posts)
     } catch (error) {
@@ -254,14 +255,31 @@ const deletePost = async (req, res) => {
         }
         // Ensure user is author of the post
         if (post.author.toString() !== req.user._id.toString()) {
-            console.error(new Date(), "WARNING: Unauthorized edit attempt! User", req.user, "tried to delete post", req.body._id , "which does not belong to him.")
-            return res.status(403).send({ message: "Post does not belongs to you!"})
+            console.error(new Date(), "WARNING: Unauthorized delete attempt! User", req.user, "tried to delete post", req.body._id , "which does not belong to him.")
+            return res.status(403).send({ message: "Post does not belong to you!"})
         }
+
         // Delete post
         await Post.findByIdAndDelete(req.body._id)
         // Delete all comments associated with the post
         await Comment.deleteMany({post: req.body._id})
-        console.log(new Date(), "Post", req.body._id.toString(), "has been deleted.")
+
+        // Delete folder with post images
+        const uploadPath = path.join(__dirname, "..", "uploads", "images", "posts", req.body._id.toString())
+        if (fs.existsSync(uploadPath)) {
+            // Delete all files inside
+            const files = fs.readdirSync(uploadPath)
+            for (const file of files) {
+                const filePath = path.join(uploadPath, file)
+                if (fs.lstatSync(filePath).isFile()) {
+                    fs.unlinkSync(filePath)
+                }
+            }
+            // Remove the directory itself
+            fs.rmdirSync(uploadPath)
+        }
+
+        console.log(new Date(), "Post", req.body._id.toString(), "and its images folder have been deleted.")
         return res.status(200).send({ message: "Post deleted."})
     } catch (error) {
         console.error(new Date(), "Error deleting post:", error)

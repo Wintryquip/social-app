@@ -36,13 +36,9 @@ const sendNotification = async (req, res) => {
             await notification.save()
             delete req.notification
             console.log(new Date(), "Notification sent:", notification)
-            return res.status(200).send({ message: "Notification sent successfully." })
-        } else {
-            return res.status(400).send({ message: "Cannot send notification to yourself." });
         }
     } catch (error) {
         console.log(new Date(), "Failed attempt sending notification: ", error);
-        res.status(500).send({ message: "Internal server error!" });
     }
 }
 
