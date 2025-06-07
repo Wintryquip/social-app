@@ -8,6 +8,7 @@ const path = require("path")
 const { sendNotification } = require("./notificationController");
 const {Post} = require("../models/post");
 const {Comment} = require("../models/comment");
+const {Notification} = require("../models/notification");
 const {mongo} = require("mongoose");
 
 /*
@@ -24,13 +25,13 @@ const signUpUser = async (req, res) => {
         if(user)
             return res
                 .status(409)
-                .send({ message: "User with given login address already exists!"})
+                .send({ message: "User with given login already exists!"})
         const normalizedEmail = req.body.email.trim().toLowerCase();
         const checkEmailUser = await User.findOne({ email: normalizedEmail })
         if(checkEmailUser)
             return res
                 .status(409)
-                .send({message: "User with given email already exists!"})
+                .send({message: "User with given email address already exists!"})
         const salt = await bcrypt.genSalt(Number(process.env.SALT))
         const hashPassword = await bcrypt.hash(req.body.password, salt)
         await new User({ ...req.body, login: normalizedLogin, email: normalizedEmail, password: hashPassword }).save()
@@ -113,8 +114,19 @@ const auth = (req, res, next) => {
     his login.
  */
 const searchUsers = async (req, res) => {
-    const login = req.params.login.toString()
-
+    try {
+        const login = req.params.login.toString()
+        const users = await User.find({
+            login: { $regex: login, $options: 'i' }
+        })
+            .select("_id login profilePic bio")
+        if (!users)
+            return res.status(404).send({ message: "No users found." })
+        return res.status(200).send({ users: users })
+    } catch (error) {
+        console.log(new Date(), "Error searching users.")
+        res.status(500).send({ message: "Internal Server Error!" })
+    }
 }
 
 /*
@@ -122,41 +134,17 @@ const searchUsers = async (req, res) => {
  */
 const userProfile = async (req, res) => {
     try {
-        const userData = await User.findOne({_id: new mongoose.Types.ObjectId(req.body._id)})
-            .select("-_id -password -__v -createdAt -updatedAt")
+        const login = req.params.login.toString()
+        const user = await User.findOne({login: login})
+            .select("-password -__v -updatedAt")
             .populate([
                 {path: 'followers', select: 'login profilePic'},
                 {path: 'following', select: 'login profilePic'}
             ])
-        if(!userData)
+        if(!user)
             return res.status(401).send({ message: "User not found" })
-
-        const userPosts = await Post.find({ author: new mongoose.Types.ObjectId(req.body._id)})
-            .sort({updatedAt: -1})
-            .populate({
-                path: 'likes',
-                select: 'login'
-            })
-            .populate({
-                path: 'author',
-                select: 'login profilePic'
-            })
-            .populate({
-                path: 'comments',
-                select: 'text author likes',
-                populate: [
-                    {
-                        path: 'author',
-                        select: 'login profilePic'
-                    },
-                    {
-                        path: 'likes',
-                        select: 'login'
-                    }]
-            })
         res.send({
-            user: userData,
-            posts: userPosts
+            user
         });
     } catch (err) {
         res.status(500).send({ message: "Internal server error!" })
@@ -166,15 +154,16 @@ const userProfile = async (req, res) => {
 /*
     Function allowing user to edit his data.
  */
-// TODO unique login validation
 const editUser = async (req, res) => {
     const validate = (data) => {
         const schema = Joi.object({
             firstName: Joi.string()
+                .empty('')
                 .optional()
                 .label("First name"),
             lastName: Joi.string()
                 .optional()
+                .empty('')
                 .label("Last name"),
             login: Joi.string()
                 .required()
@@ -185,9 +174,11 @@ const editUser = async (req, res) => {
                 .label("E-mail"),
             bio: Joi.string()
                 .optional()
+                .empty('')
                 .max(1000),
             profilePic: Joi.string()
                 .optional()
+                .empty('')
                 .label("Profile Picture")
         })
         return schema.validate(data)
@@ -200,12 +191,23 @@ const editUser = async (req, res) => {
         let updatedUserData = { ...user.toObject(), ...req.body }
 
         // Normalize login and email if present
-        if (updatedUserData.login) {
+        // Check is present in database
+        if (updatedUserData.login && updatedUserData.login.trim().toLowerCase() !== user.login) {
             updatedUserData.login = updatedUserData.login.trim().toLowerCase()
+            const checkLogin = await User.findOne({ login: updatedUserData.login });
+            if (checkLogin) {
+                return res.status(409).send({ message: "User with given login already exists!" });
+            }
         }
 
-        if (updatedUserData.email) {
+        // Normalize email if exist
+        // Check is present in database
+        if (updatedUserData.email && updatedUserData.email.trim().toLowerCase() !== user.email) {
             updatedUserData.email = updatedUserData.email.trim().toLowerCase()
+            const checkEmail = await User.findOne({ email: updatedUserData.email });
+            if (checkEmail) {
+                return res.status(409).send({ message: "User with given email address already exists!" });
+            }
         }
 
         const file = req.files ? req.files.image : null
@@ -349,10 +351,38 @@ const followUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user._id);
-        const deletedUser = await User.findByIdAndDelete(userId);
 
+        const deletedUser = await User.findByIdAndDelete(userId)
         if (!deletedUser) {
-            return res.status(404).send({ message: "User not found." });
+            return res.status(404).send({ message: "User not found." })
+        }
+
+        // Delete user profile picture if exists
+        if(deletedUser.profilePic) {
+            const uploadPath = path.join(__dirname, "..", "uploads", "images", "profile", userId.toString());
+            if (fs.existsSync(uploadPath)) {
+                fs.rmSync(uploadPath, { recursive: true, force: true });
+            }
+        }
+
+        // Delete user post pictures
+        const userPosts = await Post.find({ author: userId })
+        for (const post of userPosts) {
+            if (post.images) {
+                const imagePath = path.join(__dirname, "..", "uploads", "images", "posts", post._id.toString())
+                if (fs.existsSync(imagePath)) {
+                    // Delete all files inside
+                    const files = fs.readdirSync(imagePath)
+                    for (const file of files) {
+                        const filePath = path.join(imagePath, file)
+                        if (fs.lstatSync(filePath).isFile()) {
+                            fs.unlinkSync(filePath)
+                        }
+                    }
+                }
+                // Remove the directory itself
+                fs.rmdirSync(imagePath)
+            }
         }
 
         await Promise.all([
@@ -360,15 +390,16 @@ const deleteUser = async (req, res) => {
             Comment.deleteMany({ author: userId }),
             Notification.deleteMany({ recipient: userId }),
             Notification.deleteMany({ fromUser: userId }),
-        ]);
+        ])
 
-        console.log(new Date(), "User and all associated data deleted.");
-        res.status(200).send({ message: "User deleted successfully", data: deletedUser });
+        console.log(new Date(), "User and all associated data deleted.")
+        res.status(200).send({ message: "User deleted successfully", data: deletedUser })
     } catch (err) {
         console.error("Error deleting user:", err);
-        res.status(500).send({ message: "Internal server error", error: err.message });
+        res.status(500).send({ message: "Internal server error", error: err.message })
     }
 }
 
 
-module.exports = { signUpUser, signInUser, logoutUser, auth, userProfile, editUser, deleteUserProfilePic, followUser, deleteUser }
+
+module.exports = { signUpUser, signInUser, logoutUser, auth, searchUsers, userProfile, editUser, deleteUserProfilePic, followUser, deleteUser }

@@ -35,7 +35,6 @@ const sendNotification = async (req, res) => {
             });
             await notification.save()
             delete req.notification
-            console.log(new Date(), "Notification sent:", notification)
         }
     } catch (error) {
         console.log(new Date(), "Failed attempt sending notification: ", error);
@@ -94,7 +93,6 @@ const setReadNotifications = async (req, res) => {
 const deleteNotification = async (req, res) => {
     try {
         await Notification.deleteMany({ recipient: req.user._id, read: true });
-        console.log(new Date(), "Read notifications deleted successfully.");
     } catch (error) {
         console.log(new Date(), "Failed attempt deleting notifications: ", error);
     }

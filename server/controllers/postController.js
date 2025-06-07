@@ -10,14 +10,8 @@ const path = require("path")
  */
 const showPosts = async (req, res) => {
     try {
-        // Pagination
-        const page = parseInt(req.query.page) || 1
-        const limit = parseInt(req.query.limit) || 10
-        const skip = (page - 1) * limit
         const posts = await Post.find()
             .sort({ updatedAt: -1 })
-            .skip(skip)
-            .limit(limit)
             .populate({
                 path: 'likes',
                 select: 'login'

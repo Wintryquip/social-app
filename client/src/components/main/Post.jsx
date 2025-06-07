@@ -12,6 +12,7 @@ import {
     Send
 } from 'react-bootstrap-icons';
 import ServerError from "../pages/ServerError";
+import { Link } from "react-router-dom";
 
 const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
     const baseUrl = process.env.REACT_APP_API_URL
@@ -20,11 +21,11 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
     const [error, setError] = useState(null)
     const [editingCommentId, setEditingCommentId] = useState(null)
     const [isEditingPost, setIsEditingPost] = useState(false)
-    const [expandedImageIndex, setExpandedImageIndex] = useState(null);
+    const [expandedImageIndex, setExpandedImageIndex] = useState(null)
 
     const handleCommentChange = (postId, text) => {
         setComments((prev) => ({ ...prev, [postId]: text }))
-    };
+    }
 
     const handleCommentSubmit = async (e, postId) => {
         e.preventDefault()
@@ -41,11 +42,11 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
             setComments((prev) => ({ ...prev, [postId]: "" }))
             fetchPosts()
         } catch (error) {
-            if (error.response && error.response.status >= 400 && error.response.status <= 500) {
+            if (error.response?.status >= 400 && error.response?.status <= 500) {
                 setError(error.response.data.message)
             }
         }
-    };
+    }
 
     const handleCommentDelete = async (commentId) => {
         try {
@@ -57,16 +58,16 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
             })
             fetchPosts()
         } catch (error) {
-            if (error.response && error.response.status >= 400 && error.response.status <= 500) {
-                setError(error.response.data.message);
+            if (error.response?.status >= 400 && error.response?.status <= 500) {
+                setError(error.response.data.message)
             }
         }
-    };
+    }
 
     const handlePostLike = (e) => {
         e.preventDefault()
         onPostLike(post._id)
-    };
+    }
 
     const handlePostDelete = async (e, postId) => {
         e.preventDefault()
@@ -79,11 +80,13 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
             })
             fetchPosts()
         } catch (error) {
-            if (error.response && error.response.status >= 400 && error.response.status <= 500) {
+            if (error.response?.status >= 400 && error.response?.status <= 500) {
                 setError(error.response.data.message)
             }
         }
-    };
+    }
+
+    const isPostAuthor = user?.login && post.author?.login && user.login === post.author.login
 
     return (
         <div className="card shadow-sm mb-4 border-0">
@@ -92,8 +95,8 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                 <div className="d-flex align-items-center">
                     <img
                         src={
-                            post.author.profilePic
-                                ? baseUrl + ":" + port + post.author.profilePic
+                            post.author?.profilePic
+                                ? `${baseUrl}:${port}${post.author.profilePic}`
                                 : `${baseUrl}:${port}/uploads/images/profile/default/default.png`
                         }
                         alt="Author profile"
@@ -101,26 +104,31 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                         style={{ width: "40px", height: "40px", objectFit: "cover" }}
                     />
                     <div>
-                        <h6 className="mb-0 fw-bold">{post.author.login}</h6>
+                        <h6 className="mb-0 fw-bold">
+                            {post.author?.login ? (
+                                <Link to={`/profile/${post.author.login}`} className="text-decoration-none text-dark">
+                                    {post.author.login}
+                                </Link>
+                            ) : (
+                                <span className="text-danger">USER DELETED</span>
+                            )}
+                        </h6>
                         <small className="text-muted">
                             <Clock className="me-1" size={12} />
                             {new Date(post.createdAt).toLocaleString()}
                         </small>
                     </div>
                 </div>
-
-                {user?.login === post.author.login && !isEditingPost && (
+                {isPostAuthor && !isEditingPost && (
                     <div className="ms-auto">
                         <button
                             className="btn btn-sm btn-outline-danger me-2"
-                            onClick={(e) => handlePostDelete(e, post._id)}
-                        >
+                            onClick={(e) => handlePostDelete(e, post._id)}>
                             <Trash size={14} />
                         </button>
                         <button
                             className="btn btn-sm btn-outline-primary"
-                            onClick={() => setIsEditingPost(true)}
-                        >
+                            onClick={() => setIsEditingPost(true)}>
                             <Pencil size={14} />
                         </button>
                     </div>
@@ -133,8 +141,8 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                     <EditPost
                         post={post}
                         fetchPosts={() => {
-                            fetchPosts();
-                            setIsEditingPost(false);
+                            fetchPosts()
+                            setIsEditingPost(false)
                         }}
                     />
                 ) : (
@@ -143,7 +151,6 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
 
                         {post.images.length > 0 && (
                             <div className="mb-3">
-                                {/* Main photo */}
                                 <div className="mb-2 text-center">
                                     <img
                                         src={baseUrl + ":" + port + post.images[0]}
@@ -153,8 +160,6 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                                         onClick={() => setExpandedImageIndex(0)}
                                     />
                                 </div>
-
-                                {/* Thumbnails */}
                                 <div className="d-flex flex-wrap justify-content-center gap-2">
                                     {post.images.slice(1).map((image, idx) => (
                                         <img
@@ -201,8 +206,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                 {/* Comments Section */}
                 <div className="mb-3">
                     {post.comments.map((comment) => {
-                        const isEditing = editingCommentId === comment._id;
-
+                        const isEditing = editingCommentId === comment._id
                         return (
                             <div key={comment._id} className="mb-2">
                                 {isEditing ? (
@@ -226,7 +230,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                                     </div>
                                 )}
                             </div>
-                        );
+                        )
                     })}
                 </div>
 

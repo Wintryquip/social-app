@@ -14,7 +14,7 @@ const Main = () => {
     const [error, setError] = useState(null)
     const [postToEdit, setPostToEdit] = useState(null)
     const { user } = useContext(UserContext)
-    const token = localStorage.getItem("token")
+    const token = user?.token
 
     const fetchPosts = () => {
         fetch(`${baseUrl}:${port}/post/show`)
@@ -65,11 +65,27 @@ const Main = () => {
     if (error) return <ServerError error={error} />
 
     if (!posts) return (
-        <div className="text-center mt-5">
+        <div className="container d-flex flex-column min-vh-100 justify-content-center align-items-center">
             <Spinner animation="border" variant="primary" />
             <p className="mt-2 text-muted">Loading posts...</p>
         </div>
     )
+
+    if (posts.length === 0) {
+        return (
+            <div className="container d-flex flex-column min-vh-100 justify-content-center align-items-center">
+                {user?.login && (
+                    <div className="card shadow-sm mb-4 border-0 w-100" style={{ maxWidth: '600px' }}>
+                        <div className="card-body">
+                            <UploadPost fetchPosts={fetchPosts} />
+                        </div>
+                    </div>
+                )}
+                <h3 className="text-muted mb-4">No posts available.</h3>
+            </div>
+        )
+    }
+
 
     return (
         <div className="container mt-4">
@@ -80,7 +96,7 @@ const Main = () => {
                         Community Posts
                     </h2>
 
-                    {localStorage.getItem("login") && !postToEdit && (
+                    {user?.login && !postToEdit && (
                         <div className="card shadow-sm mb-4 border-0">
                             <div className="card-body">
                                 <UploadPost fetchPosts={fetchPosts} />
@@ -88,7 +104,7 @@ const Main = () => {
                         </div>
                     )}
 
-                    {localStorage.getItem("login") && postToEdit && (
+                    {user?.login && postToEdit && (
                         <div className="card shadow-sm mb-4 border-primary">
                             <div className="card-body">
                                 <EditPost post={postToEdit} fetchPosts={handleFinishEdit} />

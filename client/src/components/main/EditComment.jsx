@@ -42,38 +42,22 @@ const EditComment = ({ comment, user, token, fetchPosts, onFinishEdit }) => {
     }
 
     return (
-        <form onSubmit={handleEditSubmit} style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            borderRadius: "8px",
-            marginTop: "10px",
-            backgroundColor: "#f9f9f9"
-        }}>
-            <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                rows={3}
-                style={{
-                    width: "100%",
-                    padding: "8px",
-                    borderRadius: "6px",
-                    border: "1px solid #aaa",
-                    resize: "vertical",
-                    marginBottom: "10px"
-                }}
-            />
-            <div style={{ display: "flex", gap: "10px" }}>
+        <form
+            onSubmit={handleEditSubmit}
+            className="border rounded p-3 mt-3 bg-light"
+        >
+      <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          className="form-control mb-3"
+      />
+
+            <div className="d-flex gap-2">
                 <button
                     type="submit"
                     disabled={loading}
-                    style={{
-                        padding: "6px 14px",
-                        borderRadius: "6px",
-                        backgroundColor: "#007bff",
-                        color: "#fff",
-                        border: "none",
-                        cursor: "pointer"
-                    }}
+                    className="btn btn-primary"
                 >
                     {loading ? "Saving..." : "Save"}
                 </button>
@@ -81,18 +65,17 @@ const EditComment = ({ comment, user, token, fetchPosts, onFinishEdit }) => {
                     type="button"
                     onClick={onFinishEdit}
                     disabled={loading}
-                    style={{
-                        padding: "6px 14px",
-                        borderRadius: "6px",
-                        backgroundColor: "#ccc",
-                        border: "none",
-                        cursor: "pointer"
-                    }}
+                    className="btn btn-secondary"
                 >
                     Cancel
                 </button>
             </div>
-            {error && <div style={{ color: "red", marginTop: "10px" }}>{error}</div>}
+
+            {error && (
+                <div className="text-danger mt-3">
+                    {error}
+                </div>
+            )}
         </form>
     )
 }

@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react"
+import {useState, useEffect, useContext} from "react"
 import axios from "axios"
+import {UserContext} from "../../contexts/UserContext";
 
 const EditPost = ({ post, fetchPosts }) => {
     const baseUrl = process.env.REACT_APP_API_URL
     const port = process.env.REACT_APP_API_PORT
+    const { user } = useContext(UserContext)
     const [content, setContent] = useState(post.content || "")
     const [images, setImages] = useState([])
     const [error, setError] = useState("")
-    const token = localStorage.getItem("token")
+    const token = user?.token
 
     useEffect(() => {
         setContent(post.content || "")
