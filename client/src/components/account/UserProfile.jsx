@@ -95,7 +95,7 @@ const UserProfile = () => {
         fetchUserData()
     }, [login, user])
 
-    if (error) 
+    if (error)
         return <ServerError error={error} />
 
     if (!profileUser)
