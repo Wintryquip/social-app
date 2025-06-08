@@ -27,12 +27,12 @@ const UserProfile = () => {
             setProfileUser(fetchedUser)
 
             if (user && fetchedUser.followers) {
-                const followed = fetchedUser.followers.some(
-                    (follower) => follower._id === user._id
-                )
-                setIsFollowing(followed)
-            } else {
-                setIsFollowing(false)
+                for (const follower of fetchedUser.followers) {
+                    if (user.login === follower.login) {
+                        setIsFollowing(true)
+                        break
+                    }
+                }
             }
 
             await fetchUserPosts()
@@ -95,7 +95,8 @@ const UserProfile = () => {
         fetchUserData()
     }, [login, user])
 
-    if (error) return <ServerError error={error} />
+    if (error) 
+        return <ServerError error={error} />
 
     if (!profileUser)
         return (
