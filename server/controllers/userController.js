@@ -9,6 +9,7 @@ const {Post} = require("../models/post");
 const {Comment} = require("../models/comment");
 const {Notification} = require("../models/notification");
 
+// TODO reset password
 /*
     Function saving user data in the database.
     Password is being hashed before save.
@@ -68,15 +69,6 @@ const signInUser = async (req, res) => {
         if (!validPassword)
             return res.status(401).send({ message: "Invalid Login or Password!" })
 
-        const token = user.generateAuthToken();
-
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "Lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
-
         // save userId in session doc
         req.session.userId = user._id
 
@@ -102,19 +94,15 @@ const signInUser = async (req, res) => {
     Function logging out user from the system.
     Destroying session.
  */
-const logoutUser = async (req, res) => {
-    try {
-        req.session.destroy((err) => {
-            if (err) {
-                return res.status(500).send({ message: "Error logging out." })
-            }
-        })
+const logoutUser = (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).send({ message: "Error logging out." })
+        }
+        res.clearCookie('connect.sid')
         res.status(200).send({ message: "Logged out successfully." })
-        console.log(new Date(), "User", req.user, "logged out.")
-    } catch (error) {
-        console.log(new Date(), "Error logging out user:", error)
-        res.status(500).send({ message: "Internal Server Error!" })
-    }
+        console.log(new Date(), "User", req.user.login, "logged out.")
+    })
 }
 
 /*

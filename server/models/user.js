@@ -1,5 +1,4 @@
 const mongoose = require("mongoose")
-const jwt = require("jsonwebtoken")
 const Joi = require("joi")
 const passwordComplexity = require("joi-password-complexity")
 
@@ -15,12 +14,6 @@ const userSchema = new mongoose.Schema({
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, { timestamps: true})
-
-userSchema.methods.generateAuthToken = function () {
-    return jwt.sign({_id: this._id}, process.env.JWTPRIVATEKEY, {
-        expiresIn: "7d",
-    })
-}
 
 const User = mongoose.model("User", userSchema)
 
