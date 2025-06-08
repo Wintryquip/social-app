@@ -16,14 +16,13 @@ const Navbar = () => {
     }
 
     const fetchNotifications = () => {
-        const token = user?.token
 
         fetch(`${baseUrl}:${port}/notification/show`, {
             method: "GET",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            }
+                "Content-Type": "application/json"
+            },
+            credentials: "include"
         })
             .then(response => {
                 if (!response.ok) {
@@ -40,13 +39,12 @@ const Navbar = () => {
     }, [])
 
     const markNotificationAsRead = (id) => {
-        const token = user?.token
         fetch(`${baseUrl}:${port}/notification/read`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
             },
+            withCredentials: true,
             body: JSON.stringify({ _id: id })
         })
             .then(response => {

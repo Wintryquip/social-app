@@ -1,33 +1,46 @@
-import React, { createContext, useState } from "react"
+import React, { createContext, useState, useEffect } from "react"
+import axios from "axios"
 
 export const UserContext = createContext({})
 
 export const UserProvider = ({ children }) => {
     const DEFAULT_PROFILE_PIC = "/uploads/images/profile/default/default.png"
-    const [user, setUser] = useState(() => {
-        const token = localStorage.getItem("token")
-        const login = localStorage.getItem("login")
-        const profilePic = localStorage.getItem("profilePic") || DEFAULT_PROFILE_PIC
-        return token ? { token, login, profilePic } : null
-    })
+    const [user, setUser] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const baseUrl = process.env.REACT_APP_API_URL
+    const port = process.env.REACT_APP_API_PORT
 
-    const login = ({ token, login, profilePic }) => {
-        const pic = profilePic || DEFAULT_PROFILE_PIC
-        localStorage.setItem("token", token)
-        localStorage.setItem("login", login)
-        localStorage.setItem("profilePic", pic)
-        setUser({ token, login, profilePic: pic })
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const { data } = await axios.get(`${baseUrl}:${port}/user/me`, { withCredentials: true })
+                setUser({
+                    _id: data._id,
+                    login: data.login,
+                    profilePic: data.profilePic || DEFAULT_PROFILE_PIC
+                })
+            } catch (error) {
+                setUser(null)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchUser()
+    }, [baseUrl, port])
+
+    const login = (userData) => {
+        setUser({
+            login: userData.login,
+            profilePic: userData.profilePic || DEFAULT_PROFILE_PIC
+        })
     }
 
     const logout = () => {
-        localStorage.removeItem("token")
-        localStorage.removeItem("login")
-        localStorage.removeItem("profilePic")
         setUser(null)
     }
 
     return (
-        <UserContext.Provider value={{ user, setUser, login, logout, DEFAULT_PROFILE_PIC }}>
+        <UserContext.Provider value={{ user, setUser, login, logout, loading, DEFAULT_PROFILE_PIC }}>
             {children}
         </UserContext.Provider>
     )

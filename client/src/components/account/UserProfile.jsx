@@ -10,7 +10,6 @@ import { FaHeart, FaRegHeart } from "react-icons/fa"
 const UserProfile = () => {
     const baseUrl = process.env.REACT_APP_API_URL
     const port = process.env.REACT_APP_API_PORT
-    const token = localStorage.getItem("token")
 
     const { user } = useContext(UserContext)
     const { login } = useParams()
@@ -58,9 +57,7 @@ const UserProfile = () => {
                 `${baseUrl}:${port}/post/like`,
                 { _id: postId },
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true
                 }
             )
             await fetchUserPosts()
@@ -72,7 +69,7 @@ const UserProfile = () => {
     };
 
     const handleFollowToggle = async () => {
-        if (!token || !user || !profileUser) return
+        if (!user || !profileUser) return
 
         setLoadingFollow(true)
         try {
@@ -80,7 +77,7 @@ const UserProfile = () => {
                 `${baseUrl}:${port}/user/follow`,
                 { _id: profileUser._id },
                 {
-                    headers: { Authorization: `Bearer ${token}` },
+                    withCredentials: true
                 }
             )
 
@@ -136,7 +133,7 @@ const UserProfile = () => {
                     <strong>{profileUser.following?.length || 0}</strong> following
                 </p>
 
-                {token && user && user._id !== profileUser._id && (
+                {user && user._id !== profileUser._id && (
                     <Button
                         variant="link"
                         onClick={handleFollowToggle}
@@ -170,7 +167,6 @@ const UserProfile = () => {
                         <Post
                             post={post}
                             user={user}
-                            token={token}
                             onPostLike={handlePostLike}
                             fetchPosts={fetchUserPosts}
                         />

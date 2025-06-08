@@ -1,6 +1,5 @@
 const {validate, User} = require("../models/user")
 const mongoose = require("mongoose")
-const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
 const Joi = require("joi")
 const fs = require("fs")
@@ -9,7 +8,6 @@ const { sendNotification } = require("./notificationController");
 const {Post} = require("../models/post");
 const {Comment} = require("../models/comment");
 const {Notification} = require("../models/notification");
-const {mongo} = require("mongoose");
 
 /*
     Function saving user data in the database.
@@ -69,13 +67,28 @@ const signInUser = async (req, res) => {
         )
         if (!validPassword)
             return res.status(401).send({ message: "Invalid Login or Password!" })
+
         const token = user.generateAuthToken();
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        // save userId in session doc
+        req.session.userId = user._id
+
         res.status(200).send({
             data: {
-                token,
+                _id: user._id,
                 login: user.login,
                 profilePic: user.profilePic
-            }, message: "logged in successfully." })
+            },
+            message: "Logged in successfully."
+        })
+
         console.log(new Date(),'User', user.get("login"), 'logged in.')
 
     } catch (error) {
@@ -84,9 +97,19 @@ const signInUser = async (req, res) => {
     }
 }
 
+
+/*
+    Function logging out user from the system.
+    Destroying session.
+ */
 const logoutUser = async (req, res) => {
     try {
-        res.status(200).send({ message: "Logged out successfully."})
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).send({ message: "Error logging out." })
+            }
+        })
+        res.status(200).send({ message: "Logged out successfully." })
         console.log(new Date(), "User", req.user, "logged out.")
     } catch (error) {
         console.log(new Date(), "Error logging out user:", error)
@@ -98,16 +121,21 @@ const logoutUser = async (req, res) => {
     Authentication function that checks if the user is
     logged in.
  */
-const auth = (req, res, next) => {
-    const token = req.header("Authorization")?.split(" ")[1]
-    if (!token) return res.status(401).send({ message: "Access denied. No token provided." })
-    try {
-        req.user = jwt.verify(token, process.env.JWTPRIVATEKEY)
-        next()
-    } catch (err) {
-        res.status(400).send({ message: "Invalid token." })
+const auth = async (req, res, next) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).send({ message: "Access denied. Not logged in." });
     }
-}
+    try {
+        const user = await User.findById(req.session.userId)
+        if (!user) {
+            return res.status(401).send({ message: "User not found." });
+        }
+        req.user = user;
+        next();
+    } catch (err) {
+        res.status(500).send({ message: "Internal server error." });
+    }
+};
 
 /*
     Function allowing user to find desired user by

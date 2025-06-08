@@ -1,15 +1,12 @@
-import { useContext, useState } from "react"
+import { useState } from "react"
 import axios from "axios"
-import { UserContext } from "../../contexts/UserContext"
 
 const UploadPost = ({ fetchPosts }) => {
     const baseUrl = process.env.REACT_APP_API_URL
     const port = process.env.REACT_APP_API_PORT
-    const { user } = useContext(UserContext)
     const [content, setContent] = useState("")
     const [images, setImages] = useState([])
     const [error, setError] = useState("")
-    const token = user?.token
 
     const handleImagesChange = (e) => {
         setImages(Array.from(e.target.files))
@@ -27,8 +24,8 @@ const UploadPost = ({ fetchPosts }) => {
             await axios.post(url, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${token}`,
                 },
+                withCredentials: true
             })
 
             fetchPosts()

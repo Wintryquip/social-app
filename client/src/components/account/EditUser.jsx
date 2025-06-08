@@ -3,7 +3,6 @@ import axios from "axios"
 import Swal from 'sweetalert2'
 import {UserContext} from "../../contexts/UserContext";
 
-// TODO update navbar profile picture after submit
 const EditUser = () => {
     const baseUrl = process.env.REACT_APP_API_URL + ":" + process.env.REACT_APP_API_PORT
     const apiUrl = `${baseUrl}/user`
@@ -23,17 +22,12 @@ const EditUser = () => {
     const { user, logout, setUser, DEFAULT_PROFILE_PIC } = useContext(UserContext)
 
     useEffect(() => {
-        if (!user?.token || !user?.login)
-            return
         const fetchUserData = async () => {
             try {
                 setLoading(true);
-                const token = user?.token
                 const login = user?.login
 
-                const res = await axios.get(`${apiUrl}/profile/${login}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                })
+                const res = await axios.get(`${apiUrl}/profile/${login}`, { withCredentials: true })
 
                 const fetchedUser = res.data.user
 
@@ -45,12 +39,6 @@ const EditUser = () => {
                     bio: fetchedUser.bio || "",
                     profilePic: fetchedUser.profilePic || null,
                 })
-
-                if (user.profilePic) {
-                    localStorage.setItem("profilePic", user.profilePic)
-                } else {
-                    localStorage.removeItem("profilePic")
-                }
 
             } catch {
                 console.error("Fetch user data error:", error)
@@ -80,7 +68,7 @@ const EditUser = () => {
         setError("")
         setLoading(true)
         try {
-            const token = user?.token
+            let res
 
             const dataToSend = {
                 firstName: userData.firstName,
@@ -96,20 +84,27 @@ const EditUser = () => {
                     formData.append(key, value)
                 })
                 formData.append("image", profilePicFile)
-                await axios.patch(`${apiUrl}/edit`, formData, {
+                res = await axios.patch(`${apiUrl}/edit`, formData, {
+                    withCredentials: true,
                     headers: {
-                        "Content-Type": "multipart/form-data",
-                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "multipart/form-data"
                     },
                 })
 
             } else {
-                await axios.patch(`${apiUrl}/edit`, dataToSend, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                res = await axios.patch(`${apiUrl}/edit`, dataToSend, {
+                    withCredentials: true
                 })
             }
+
+            const updatedUser = res.data;
+
+            setUser(prev => ({
+                ...prev,
+                login: updatedUser.login,
+                profilePic: updatedUser.profilePic || prev.profilePic,
+            }));
+
             setMessage("Profile updated successfully!")
             setProfilePicFile(null)
         } catch (err) {
@@ -136,12 +131,9 @@ const EditUser = () => {
         setMessage("")
         setLoading(true)
         try {
-            const token = user?.token
             await axios.patch(
-                `${apiUrl}/picture`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` },
+                `${apiUrl}/picture`,{},{
+                    withCredentials: true,
                 }
             )
             setUserData((prev) => ({ ...prev, profilePic: null }))
@@ -170,9 +162,8 @@ const EditUser = () => {
             setMessage("")
             setLoading(true)
             try {
-                const token = user?.token
                 await axios.delete(`${apiUrl}/delete`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    withCredentials: true
                 })
                 setMessage("Account deleted. Logging out...")
                 setTimeout(() => {

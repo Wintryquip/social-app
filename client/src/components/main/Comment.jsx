@@ -3,7 +3,7 @@ import axios from "axios"
 import { Heart, HeartFill } from 'react-bootstrap-icons'
 import { Link } from "react-router-dom"
 
-const Comment = ({ comment, user, token, fetchPosts, onEditClick, onDeleteClick }) => {
+const Comment = ({ comment, user, fetchPosts, onEditClick, onDeleteClick }) => {
     const baseUrl = process.env.REACT_APP_API_URL
     const port = process.env.REACT_APP_API_PORT
     const [error, setError] = useState(null)
@@ -15,9 +15,7 @@ const Comment = ({ comment, user, token, fetchPosts, onEditClick, onDeleteClick 
                 `${baseUrl}:${port}/comment/like`,
                 { _id: comment._id },
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true
                 }
             )
             fetchPosts()
@@ -70,7 +68,7 @@ const Comment = ({ comment, user, token, fetchPosts, onEditClick, onDeleteClick 
                         ? `${comment.likes.length} ${comment.likes.length === 1 ? 'like' : 'likes'}`
                         : "No likes yet"}
                 </div>
-                {token && (
+                {user && (
                     <button
                         className={`btn btn-sm d-flex align-items-center ${comment.likes?.some(like => like.login === user?.login) ? 'text-danger' : 'text-muted'}`}
                         onClick={handleCommentLike}

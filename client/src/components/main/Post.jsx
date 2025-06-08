@@ -14,7 +14,7 @@ import {
 import ServerError from "../pages/ServerError";
 import { Link } from "react-router-dom";
 
-const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
+const Post = ({ post, user, onPostLike, fetchPosts }) => {
     const baseUrl = process.env.REACT_APP_API_URL
     const port = process.env.REACT_APP_API_PORT
     const [comments, setComments] = useState({})
@@ -35,9 +35,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                 text: comments[postId],
                 author: user._id,
             }, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                }
+                withCredentials: true
             })
             setComments((prev) => ({ ...prev, [postId]: "" }))
             fetchPosts()
@@ -51,9 +49,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
     const handleCommentDelete = async (commentId) => {
         try {
             await axios.delete(`${baseUrl}:${port}/comment/delete`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                withCredentials: true,
                 data: { _id: commentId },
             })
             fetchPosts()
@@ -73,9 +69,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
         e.preventDefault()
         try {
             await axios.delete(`${baseUrl}:${port}/post/delete`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                withCredentials: true,
                 data: { _id: postId },
             })
             fetchPosts()
@@ -189,7 +183,7 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                             ? `${post.likes.length} ${post.likes.length === 1 ? 'like' : 'likes'}`
                             : "No likes yet"}
                     </div>
-                    {token && (
+                    {user && (
                         <button
                             className={`btn btn-sm ${post.likes.some((like) => like.login === user?.login)
                                 ? 'text-danger'
@@ -213,7 +207,6 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                                     <EditComment
                                         comment={comment}
                                         user={user}
-                                        token={token}
                                         fetchPosts={fetchPosts}
                                         onFinishEdit={() => setEditingCommentId(null)}
                                     />
@@ -222,7 +215,6 @@ const Post = ({ post, user, token, onPostLike, fetchPosts }) => {
                                         <Comment
                                             comment={comment}
                                             user={user}
-                                            token={token}
                                             fetchPosts={fetchPosts}
                                             onEditClick={() => setEditingCommentId(comment._id)}
                                             onDeleteClick={handleCommentDelete}

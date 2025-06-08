@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import axios from "axios"
 
-const EditComment = ({ comment, user, token, fetchPosts, onFinishEdit }) => {
+const EditComment = ({ comment, user, fetchPosts, onFinishEdit }) => {
     const baseUrl = process.env.REACT_APP_API_URL
     const port = process.env.REACT_APP_API_PORT
     const [text, setText] = useState(comment.text)
@@ -19,9 +19,7 @@ const EditComment = ({ comment, user, token, fetchPosts, onFinishEdit }) => {
                     text,
                 },
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true
                 }
             )
             fetchPosts()

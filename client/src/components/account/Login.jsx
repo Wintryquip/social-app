@@ -1,6 +1,6 @@
 import {useContext, useState} from "react"
 import axios from "axios"
-import { Link } from "react-router-dom"
+import {Link, useNavigate} from "react-router-dom"
 import { UserContext } from "../../contexts/UserContext"
 
 const Login = () => {
@@ -10,6 +10,7 @@ const Login = () => {
         login: "",
         password: ""
     })
+    const navigate = useNavigate()
     const [error, setError] = useState("");
     const handleChange = ({ currentTarget: input }) => {
         setData({...data, [input.name]: input.value})
@@ -26,10 +27,11 @@ const Login = () => {
         e.preventDefault();
         try {
             const url = `${baseUrl}:${port}/user/login`
-            const {data: res} = await axios.post(url, data)
+            const { data: res } = await axios.post(url, data, {
+                withCredentials: true
+            })
             login(res.data)
-            // Full window reload to acknowledge token
-            window.location.assign("/")
+            navigate("/")
         } catch (error) {
             if (
                 error.response &&
@@ -37,6 +39,8 @@ const Login = () => {
                 error.response.status <= 500
             ) {
                 setError(error.response.data.message)
+            } else {
+                setError("Unexpected error occurred.")
             }
         }
     }

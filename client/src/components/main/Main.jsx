@@ -14,7 +14,6 @@ const Main = () => {
     const [error, setError] = useState(null)
     const [postToEdit, setPostToEdit] = useState(null)
     const { user } = useContext(UserContext)
-    const token = user?.token
 
     const fetchPosts = () => {
         fetch(`${baseUrl}:${port}/post/show`)
@@ -36,9 +35,7 @@ const Main = () => {
                 `${baseUrl}:${port}/post/like`,
                 { _id: postId },
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true,
                 }
             )
             fetchPosts()
@@ -118,7 +115,6 @@ const Main = () => {
                                 <Post
                                     post={post}
                                     user={user}
-                                    token={token}
                                     onPostLike={handlePostLike}
                                     fetchPosts={fetchPosts}
                                     onEdit={() => handleEditClick(post)}
