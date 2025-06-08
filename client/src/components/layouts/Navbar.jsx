@@ -16,7 +16,6 @@ const Navbar = () => {
     }
 
     const fetchNotifications = () => {
-
         fetch(`${baseUrl}:${port}/notification/show`, {
             method: "GET",
             headers: {
@@ -35,8 +34,12 @@ const Navbar = () => {
     };
 
     useEffect(() => {
-        fetchNotifications()
-    }, [])
+        if (user) {
+           fetchNotifications()
+        } else {
+            setNotifications(null)
+        }
+    }, [user])
 
     const markNotificationAsRead = (id) => {
         fetch(`${baseUrl}:${port}/notification/read`, {
@@ -44,7 +47,7 @@ const Navbar = () => {
             headers: {
                 "Content-Type": "application/json",
             },
-            withCredentials: true,
+            credentials: "include",
             body: JSON.stringify({ _id: id })
         })
             .then(response => {
