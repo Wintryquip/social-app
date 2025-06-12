@@ -122,7 +122,9 @@ const UserProfile = () => {
                 <h3>{profileUser.login}</h3>
 
                 {profileUser.bio && (
-                    <p className="mb-2 text-secondary fst-italic">{profileUser.bio}</p>
+                    <p className="mb-2 text-secondary fst-italic text-wrap text-break">
+                        {profileUser.bio}
+                    </p>
                 )}
 
                 <p className="text-muted mb-1">

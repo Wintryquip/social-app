@@ -17,7 +17,6 @@ services:
     depends_on:
       - mongo
     volumes:
-      - ./server:/app
       - ./server/uploads:/app/uploads
     restart: always
 

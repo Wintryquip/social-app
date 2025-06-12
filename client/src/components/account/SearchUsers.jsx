@@ -67,7 +67,7 @@ const SearchUsers = () => {
                                 <div>
                                     <h5 className="mb-1">{user.login}</h5>
                                     <p className="mb-0 text-muted">
-                                        {user.bio && user.bio.length > 100 ? user.bio.slice(0, 100) + "..." : user.bio}
+                                        {user.bio && user.bio.length > 100 ? user.bio.slice(0, 20) + "..." : user.bio}
                                     </p>
                                 </div>
                             </div>
