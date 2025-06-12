@@ -1,9 +1,11 @@
-FROM node:22.14.0
+FROM node:20-alpine
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+
+RUN npm config set registry https://registry.npmmirror.com/
+RUN npm ci
 COPY . .
 
 EXPOSE 8080
