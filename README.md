@@ -25,6 +25,7 @@ User image files are **stored on the Express server**, while their URL paths are
    ```bash```
    git clone https://github.com/wintryquip/social-app.git
    cd social-app
+2. Rename the file **.env.example** to **.env** and fill it in, according to the instructions.
 2. Start the containers:
    ```bash```
    docker compose up --build -d

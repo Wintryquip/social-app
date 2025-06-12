@@ -25,10 +25,11 @@ Pliki zdjęć użytkownika są **przechowywane na serwerze Express**, a w bazie 
 ```bash```
 git clone https://github.com/wintryquip/social-app.git
 cd social-app
-2. Uruchom kontenery
+2. Zmień nazwe pliku **.env.example** na **.env** i uzupełnij go zgodnie z instrukcją
+3. Uruchom kontenery
 ```bash```
 docker compose up --build -d
-3. Otwórz aplikację
+4. Otwórz aplikację
 http://localhost:3000
 
 Serwer API działa pod adresem
