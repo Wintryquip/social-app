@@ -7,3 +7,6 @@ server/uploads/images/profile/*
 !server/uploads/images/profile/default/
 !server/uploads/images/profile/default/**
 server/.env
+client/.env
+server/.dockerignore
+client/.dockerignore

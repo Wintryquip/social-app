@@ -136,6 +136,8 @@ const Login = () => {
                                     </button>
                                 </div>
 
+                                {/*
+                                Work in progress
                                 <div className="text-center mb-3">
                                     <Link
                                         to="/forgot-password"
@@ -144,6 +146,7 @@ const Login = () => {
                                         Forgot password?
                                     </Link>
                                 </div>
+                                */}
 
                                 <div className="position-relative my-4">
                                     <hr />

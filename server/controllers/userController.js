@@ -267,7 +267,6 @@ const editUser = async (req, res) => {
         delete updatedUserData.createdAt
         delete updatedUserData.updatedAt
         delete updatedUserData.__v
-        console.log(updatedUserData)
         const { error } = validate(updatedUserData)
         if (error)
             return res.status(400).send({ message: error.details[0].message })
@@ -305,7 +304,7 @@ const deleteUserProfilePic = async (req, res) => {
                 }
             }
         }
-        console.log(new Date(), "User", req.user, "profile picture deleted.")
+        console.log(new Date(), "User", req.user.login, "profile picture deleted.")
         res.status(200).send({ message: "Picture deleted." })
     } catch (error) {
         res.status(500).send({ message: "Internal server error!"})
@@ -392,7 +391,7 @@ const deleteUser = async (req, res) => {
                     for (const file of files) {
                         const filePath = path.join(imagePath, file)
                         if (fs.lstatSync(filePath).isFile()) {
-                            fs.unlinkSync(filePath)
+                                fs.unlinkSync(filePath)
                         }
                     }
                 }

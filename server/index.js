@@ -53,4 +53,4 @@ connectDB()
 
 // server
 const port = process.env.PORT || 8080
-app.listen(port, () => console.log(new Date(), `Server is listening on port ${port}`))
+app.listen(port, '0.0.0.0', () => console.log(new Date(), `Server is listening on port ${port}`))

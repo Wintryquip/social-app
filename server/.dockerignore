@@ -1,0 +1,5 @@
+node_modules
+uploads/images/posts/*
+uploads/images/profile/*
+!uploads/images/profile/default/default.png
+.env.example

@@ -47,8 +47,6 @@ const showPosts = async (req, res) => {
  */
 const createPost = async (req, res) => {
     try {
-        console.log(new Date(), "User", req.user, "tries to submit a post.")
-
         const {error} = validate(req.body)
         if(error)
             return res.status(400).send({message: error.details[0].message})
@@ -98,7 +96,7 @@ const createPost = async (req, res) => {
             await newPost.save()
         }
 
-        console.log(new Date(), "User", req.user, "submitted a post.")
+        console.log(new Date(), "User", req.user.login , "submitted a post.")
         res.status(201).send({ message: "Post created successfully" })
     } catch (error) {
         console.error(new Date(), "Error creating post:", error)
@@ -114,7 +112,6 @@ const createPost = async (req, res) => {
  */
 const updatePost = async (req, res) => {
     try {
-        console.log(new Date(), "User", req.user, "tries to edit a post signed by id", req.body._id)
         const post = await Post.findById(req.body._id) // Find post
         // post does not exist
         if(post === undefined) {
@@ -180,7 +177,7 @@ const updatePost = async (req, res) => {
             }
             await updatedPost.save()
         }
-        console.log(new Date(), "Post modified successfully.")
+        console.log(new Date(), "User", req.user.login, "modified post signed by id", req.body._id)
         res.status(200).send({ message: "Post modified successfully."})
     } catch (error) {
         console.error(new Date(), "Error editing post:", error)
